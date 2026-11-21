@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class BookingScreen extends StatefulWidget {
   final String roomName;
@@ -16,6 +17,11 @@ class _BookingScreenState extends State<BookingScreen> {
   String? selectedHour;
   int selectedDuration = 1;
   DateTime focusedDay = DateTime.now();
+  @override
+  void initState() {
+    super.initState();
+    initializeDateFormatting('fr_FR', null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +32,10 @@ class _BookingScreenState extends State<BookingScreen> {
         backgroundColor: const Color(0xFF2457A7),
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -42,9 +49,24 @@ class _BookingScreenState extends State<BookingScreen> {
               style: TextStyle(fontSize: 18),
             ),
             TableCalendar(
+              locale: 'fr_FR',
               firstDay: DateTime.now(),
               lastDay: DateTime.now().add(const Duration(days: 90)),
               focusedDay: focusedDay,
+              calendarStyle: const CalendarStyle(
+                selectedDecoration: BoxDecoration(
+                  color: Color(0xFF2457A7),
+                  shape: BoxShape.circle,
+                ),
+                todayDecoration: BoxDecoration(
+                  color: Color(0xFFB8D2F5),
+                  shape: BoxShape.circle,
+                ),
+                selectedTextStyle: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               selectedDayPredicate: (day) => isSameDay(selectedDay, day),
               onDaySelected: (selected,focused){
                 setState(() {
@@ -61,8 +83,8 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             const SizedBox(height: 10),
         Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: 12,
+          runSpacing: 12,
           children: [
             '08:00',
             '09:00',
@@ -73,13 +95,35 @@ class _BookingScreenState extends State<BookingScreen> {
             '14:00',
             '15:00',
           ].map((hour) {
+            final isSelected = selectedHour == hour;
+
             return ChoiceChip(
-              label: Text(hour),
-              selected: selectedHour == hour,
-              onSelected: (value){
+              label: SizedBox(
+                width: 58,
+                height: 58,
+                child: Center(
+                  child: Text(
+                    hour,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : const Color(0xFF2457A7),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+              selected: isSelected,
+              showCheckmark: false,
+              backgroundColor: Colors.white,
+              selectedColor: const Color(0xFF2457A7),
+              shape: const CircleBorder(
+                side: BorderSide(color: Color(0xFF2457A7), width: 1.3),
+              ),
+              padding: EdgeInsets.zero,
+              onSelected: (value) {
                 setState(() {
-                                  selectedHour = hour;
-                                });
+                  selectedHour = hour;
+                });
               },
             );
           }).toList(),
@@ -118,7 +162,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: () {
                   if (selectedHour == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -135,10 +179,21 @@ class _BookingScreenState extends State<BookingScreen> {
                     ),
                   );
                 },
-                child: const Text('Confirmer la réservation'),
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Confirmer la réservation'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2457A7),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 55),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 3,
+                ),
               ),
             ),
           ],
+            ),
         ),
       ),
     );
