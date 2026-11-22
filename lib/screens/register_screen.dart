@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -26,10 +29,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => loading = true);
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      // Créer le compte étudiant et enregistrer son rôle dans firestore.
+      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+      // Enregistrer les informations de l'étudiant dans Firestore.
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({'email': emailController.text.trim(), 'role': 'etudiant', 'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({'email': emailController.text.trim(), 'role': 'etudiant', 'createdAt': FieldValue.serverTimestamp(),
+      });
+
 
       if (!mounted) return;
 

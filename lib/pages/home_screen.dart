@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
 import 'room_booking_screen.dart';
 import 'package:projet1/pages/my_bookings_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final user = FirebaseAuth.instance.currentUser;
+// Lire le rôle de l'utilisateur depuis Firestore.
+return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+future: FirebaseFirestore.instance
+.collection('users')
+.doc(user!.uid)
+.get(),
+builder: (context, snapshot) {
+if (!snapshot.hasData) {
+return const Scaffold(
+body: Center(child: CircularProgressIndicator()),
+);
+}
+
+final role = snapshot.data!.data()?['role'] ?? 'etudiant';
+
+return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: const Text('Réservation Campus'),
@@ -19,8 +37,8 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          const Text(
-          'Bienvenue !',
+           Text(
+            role == 'responsable'?'Espace Responsable':'Bienvenue!',
           style: TextStyle(
             fontSize: 27,
             fontWeight: FontWeight.bold,
@@ -62,7 +80,9 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
+);
+},
+);
   }
 
   Widget _serviceCard(

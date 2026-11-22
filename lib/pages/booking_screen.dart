@@ -194,73 +194,82 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             ),
             const SizedBox(height: 10),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            '08:00',
-            '09:00',
-            '10:00',
-            '11:00',
-            '12:00',
-            '13:00',
-            '14:00',
-            '15:00',
-          ].map((hour) {
-            final isSelected = selectedHour == hour;
-
-            return ChoiceChip(
-              label: SizedBox(
-                width: 58,
-                height: 58,
-                child: Center(
-                  child: Text(
-                    hour,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFF2457A7),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+            // Afficher les créneaux disponibles en vert et les créneaux réservés en rouge
+            StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('slots')
+                  .where('roomId', isEqualTo: widget.roomId)
+                  .where(
+                'date',
+                isEqualTo: Timestamp.fromDate(
+                  DateTime(
+                    selectedDay.year,
+                    selectedDay.month,
+                    selectedDay.day,
                   ),
                 ),
-              ),
-              selected: isSelected,
-              showCheckmark: false,
-              backgroundColor: Colors.white,
-              selectedColor: const Color(0xFF2457A7),
-              shape: const CircleBorder(
-                side: BorderSide(color: Color(0xFF2457A7), width: 1.3),
-              ),
-              padding: EdgeInsets.zero,
-              onSelected: (value) {
-                setState(() {
-                  selectedHour = hour;
-                });
+              )
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Text('Erreur de chargement des horaires');
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final occupiedHours = snapshot.data!.docs
+                    .map((doc) => doc.data()['hour'] as int)
+                    .toSet();
+
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    '08:00',
+                    '09:00',
+                    '10:00',
+                    '11:00',
+                    '12:00',
+                    '13:00',
+                    '14:00',
+                    '15:00',
+                  ].map((hour) {
+                    final hourNumber = int.parse(hour.substring(0, 2));
+                    final isOccupied = occupiedHours.contains(hourNumber);
+                    final isSelected = selectedHour == hour;
+
+                    return ChoiceChip(label: SizedBox(width: 58, height: 58, child: Center(
+                          child: Text(hour, style: TextStyle(color: isSelected ? Colors.white : isOccupied ? Colors.red.shade900 : Colors.green.shade900, fontWeight: FontWeight.bold,fontSize: 14),
+                          ),
+                        ),
+                      ),
+                      selected: isSelected,
+                      showCheckmark: false,
+                      backgroundColor: isOccupied ? Colors.red.shade100 : Colors.green.shade100,
+                      disabledColor: Colors.red.shade100,
+                      selectedColor: const Color(0xFF2457A7),
+                      shape: CircleBorder(side: BorderSide(color: isOccupied ? Colors.red : Colors.green, width: 1.3,),
+                      ),
+                      padding: EdgeInsets.zero,
+                      onSelected: isOccupied ? null : (value) {
+                        setState(() {
+                          selectedHour = hour;
+                        });
+                      },
+                    );
+                  }).toList(),
+                );
               },
-            );
-          }).toList(),
-          ),
+            ),
             const SizedBox(height: 20),
 
-            const Text(
-              'Durée de réservation',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            const Text('Durée de réservation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,),
             ),
 
-            DropdownButton<int>(
-              value: selectedDuration,
-              items: const [
-                DropdownMenuItem(
-                  value: 1,
-                  child: Text('1 heure'),
-                ),
-                DropdownMenuItem(
-                  value: 2,
-                  child: Text('2 heures'),
-                ),
+            DropdownButton<int>(value: selectedDuration, items: const [DropdownMenuItem(value: 1, child: Text('1 heure'),),
+                DropdownMenuItem(value: 2, child: Text('2 heures'),),
               ],
               onChanged: (value) {
                 if (value != null) {
