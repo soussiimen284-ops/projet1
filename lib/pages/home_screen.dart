@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'room_booking_screen.dart';
+import 'package:projet1/pages/my_bookings_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -46,7 +47,13 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
                 _serviceCard(Icons.sports_soccer, 'Réserver un terrain', Colors.green),
-                _serviceCard(Icons.calendar_month, 'Mes réservations', Colors.orange),
+                _serviceCard(Icons.calendar_month, 'Mes réservations', Colors.orange, onTap: () {
+                  Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => const MyBookingsScreen(),
+                  ),
+                );
+              },
+            ),
                 _serviceCard(Icons.qr_code_scanner, 'Scanner QR Code', Colors.purple),
                 _serviceCard(Icons.smart_toy, 'Assistant IA', Colors.teal),
               ],
@@ -58,29 +65,38 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _serviceCard(IconData icon, String title, Color color) {
+  Widget _serviceCard(
+      IconData icon,
+      String title,
+      Color color, {
+        VoidCallback? onTap,
+      }) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 42, color: color),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 42, color: color),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
