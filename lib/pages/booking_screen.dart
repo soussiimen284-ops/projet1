@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BookingScreen extends StatefulWidget {
   final String roomName;
+  final String roomId;
   const BookingScreen({
     super.key,
     required this.roomName,
+    required this.roomId,
   });
 
   @override
@@ -22,6 +26,114 @@ class _BookingScreenState extends State<BookingScreen> {
     super.initState();
     initializeDateFormatting('fr_FR', null);
   }
+  Future<void> confirmerReservation() async {
+    if (selectedHour == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez choisir une heure'),
+        ),
+      );
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez vous connecter'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final startHour = int.parse(selectedHour!.substring(0, 2));
+
+      final date = DateTime(
+        selectedDay.year,
+        selectedDay.month,
+        selectedDay.day,
+      );
+
+      final startAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        startHour,
+      );
+
+      final bookingRef = FirebaseFirestore.instance
+          .collection('bookings')
+          .doc();
+
+      final slotRefs = List.generate(selectedDuration, (index) {
+        final hour = startHour + index;
+        final hourText = hour.toString().padLeft(2, '0');
+
+        final slotId =
+            '${widget.roomId}_${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}_$hourText';
+
+        return FirebaseFirestore.instance
+            .collection('slots')
+            .doc(slotId);
+      });
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final snapshots = [];
+
+        for (final ref in slotRefs) {
+          snapshots.add(await transaction.get(ref));
+        }
+
+        if (snapshots.any((snapshot) => snapshot.exists)) {
+          throw Exception('Ce créneau est déjà réservé');
+        }
+
+        for (int i = 0; i < slotRefs.length; i++) {
+          transaction.set(slotRefs[i], {
+            'roomId': widget.roomId,
+            'roomName': widget.roomName,
+            'userId': user.uid,
+            'bookingId': bookingRef.id,
+            'date': Timestamp.fromDate(date),
+            'hour': startHour + i,
+            'status': 'reserved',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+
+        transaction.set(bookingRef, {
+          'roomId': widget.roomId,
+          'roomName': widget.roomName,
+          'userId': user.uid,
+          'slotIds': slotRefs.map((ref) => ref.id).toList(),
+          'date': Timestamp.fromDate(date),
+          'startAt': Timestamp.fromDate(startAt),
+          'duration': selectedDuration,
+          'status': 'confirmed',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Réservation enregistrée avec succès !'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur : $e')),
+      );
+    }
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -163,22 +275,7 @@ class _BookingScreenState extends State<BookingScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  if (selectedHour == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Veuillez choisir une heure'),
-                      ),
-                    );
-                    return;
-                  }
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Sélection effectuée'),
-                    ),
-                  );
-                },
+                onPressed: confirmerReservation,
                 icon: const Icon(Icons.check_circle_outline),
                 label: const Text('Confirmer la réservation'),
                 style: ElevatedButton.styleFrom(

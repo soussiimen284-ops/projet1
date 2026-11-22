@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projet1/pages/booking_screen.dart';
-import 'booking_screen.dart';
+
 
 class RoomBookingScreen extends StatelessWidget {
   const RoomBookingScreen({super.key});
@@ -63,9 +62,15 @@ class RoomBookingScreen extends StatelessWidget {
                   ),
 
                   child: ListTile(
-                    onTap: (){
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => BookingScreen(roomName: room['name']??'Salle'),
-                      ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BookingScreen(
+                            roomName: room['name'] ?? 'Salle',
+                            roomId: rooms[index].id,
+                          ),
+                        ),
                       );
                     },
                     contentPadding: const EdgeInsets.all(15),
