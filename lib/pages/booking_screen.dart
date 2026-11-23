@@ -75,6 +75,44 @@ class _BookingScreenState extends State<BookingScreen> {
         selectedDay.month,
         selectedDay.day,
       );
+      // Calculer le début et la fin de la semaine de réservation.
+      final weekStart = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).subtract(Duration(days: date.weekday - 1));
+
+      final weekEnd = weekStart.add(const Duration(days: 7));
+
+      // Récupérer les réservations confirmées de l'étudiant.
+      final weeklyBookings = await FirebaseFirestore.instance
+          .collection('bookings')
+          .where('userId', isEqualTo: user.uid)
+          .where('status', isEqualTo: 'confirmed')
+          .get();
+
+     // Calculer le nombre d'heures déjà réservées cette semaine.
+      final weeklyHours = weeklyBookings.docs
+          .where((doc) {
+        final bookingDate = (doc.data()['date'] as Timestamp).toDate();
+        return !bookingDate.isBefore(weekStart) &&
+            bookingDate.isBefore(weekEnd);
+      })
+          .fold<int>(
+        0,
+            (total, doc) =>
+        total + ((doc.data()['duration'] as num?)?.toInt() ?? 0),
+      );
+
+      // Vérifier que l'étudiant ne dépasse pas 4 heures par semaine.
+      if (weeklyHours + selectedDuration > 4) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vous avez atteint la limite de 4 heures par semaine.',),
+          ),
+        );
+        return;
+      }
 
       final startAt = DateTime(
         date.year,
