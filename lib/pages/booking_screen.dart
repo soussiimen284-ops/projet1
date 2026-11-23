@@ -7,10 +7,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class BookingScreen extends StatefulWidget {
   final String roomName;
   final String roomId;
+
+  // Récupérer les horaires d'ouverture et de fermeture de la salle.
+  final String ouverture;
+  final String fermeture;
+
   const BookingScreen({
     super.key,
     required this.roomName,
     required this.roomId,
+    this.ouverture = '08:00',
+    this.fermeture = '18:00',
   });
 
   @override
@@ -49,6 +56,19 @@ class _BookingScreenState extends State<BookingScreen> {
 
     try {
       final startHour = int.parse(selectedHour!.substring(0, 2));
+      // Vérifier que la réservation se termine avant la fermeture.
+      final closingHour = int.parse(widget.fermeture.substring(0, 2));
+
+      if (startHour + selectedDuration > closingHour) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('La réservation dépasse l’heure de fermeture.'),
+          ),
+        );
+        return;
+      }
+
+
 
       final date = DateTime(
         selectedDay.year,
@@ -222,20 +242,14 @@ class _BookingScreenState extends State<BookingScreen> {
                 final occupiedHours = snapshot.data!.docs
                     .map((doc) => doc.data()['hour'] as int)
                     .toSet();
+                // Convertir les horaires d'ouverture et de fermeture en heures.
+                final openingHour = int.parse(widget.ouverture.substring(0, 2));
+                final closingHour = int.parse(widget.fermeture.substring(0, 2));
 
                 return Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  children: [
-                    '08:00',
-                    '09:00',
-                    '10:00',
-                    '11:00',
-                    '12:00',
-                    '13:00',
-                    '14:00',
-                    '15:00',
-                  ].map((hour) {
+                  children:List.generate(closingHour - openingHour,(index) =>'${(openingHour + index).toString().padLeft(2, '0')}:00',).map((hour) {
                     final hourNumber = int.parse(hour.substring(0, 2));
                     final isOccupied = occupiedHours.contains(hourNumber);
                     final isSelected = selectedHour == hour;

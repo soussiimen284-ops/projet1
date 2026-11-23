@@ -66,9 +66,9 @@ class RoomBookingScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => BookingScreen(
-                            roomName: room['nom'] ?? 'Salle',
-                            roomId: rooms[index].id,
+                          builder: (context) =>BookingScreen(roomName: room['nom'] ?? 'Salle', roomId: rooms[index].id,
+                            ouverture: room['ouverture'] ?? '08:00',
+                            fermeture: room['fermeture'] ?? '18:00',
                           ),
                         ),
                       );
