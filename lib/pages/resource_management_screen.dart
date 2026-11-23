@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 // Écran de gestion des ressources par le responsable.
 // Gérer les ressources avec des champs modifiables.
@@ -12,6 +14,35 @@ class ResourceManagementScreen extends StatefulWidget {
 
 class _ResourceManagementScreenState
     extends State<ResourceManagementScreen> {
+  //stocker la photo sélectionnee par le responsable.
+  File? selectesImage;
+  //controler le nom de la ressource.
+  final TextEditingController nomController = TextEditingController();
+  //controler la capacite de la ressource.
+  final TextEditingController capaciteController = TextEditingController();
+  //controler les equipements de la ressource.
+  final TextEditingController equipementsController =TextEditingController();
+  // Contrôler l'heure d'ouverture de la ressource.
+  final TextEditingController ouvertureController = TextEditingController();
+  // Contrôler l'heure d'ferme de la ressource.
+  final TextEditingController fermetureController = TextEditingController();
+  //Stocker le type de la ressource.
+  String? typeRessource;
+
+  //choisir une photo depuis le telephone.
+  Future<void> choisirImage() async {
+    final ImagePicker picker = ImagePicker();
+
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (image != null) {
+      setState(() {
+        selectesImage = File(image.path);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +73,7 @@ class _ResourceManagementScreenState
 
             // Saisir le nom de la ressource.
             TextField(
+              controller: nomController,
               decoration: InputDecoration(
                 labelText: 'Nom de la ressource',
                 border: OutlineInputBorder(
@@ -50,6 +82,7 @@ class _ResourceManagementScreenState
                 prefixIcon: const Icon(Icons.meeting_room),
               ),
             ),
+
 
             const SizedBox(height: 15),
 
@@ -73,11 +106,17 @@ class _ResourceManagementScreenState
                   child: Text('Terrain'),
                 ),
               ],
-              onChanged: (value) {},
+              // Enregistrer le type de ressource.
+              onChanged: (value) {
+                setState(() {
+                  typeRessource = value;
+                });
+              },
             ),
             const SizedBox(height: 15),
             // Saisir la capacité de la ressource.
             TextField(
+              controller: capaciteController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Capacité',
@@ -88,6 +127,7 @@ class _ResourceManagementScreenState
             const SizedBox(height: 15),
             // Saisir les équipements disponibles.
             TextField(
+              controller: equipementsController,
               maxLines: 2,
               decoration: const InputDecoration(
                 labelText: 'Équipements',
@@ -100,6 +140,7 @@ class _ResourceManagementScreenState
 
             // Saisir l'heure d'ouverture de la ressource.
             TextField(
+              controller: ouvertureController,
               decoration: const InputDecoration(
                 labelText: 'Heure d’ouverture (ex: 08:00)',
                 border: OutlineInputBorder(),
@@ -110,11 +151,29 @@ class _ResourceManagementScreenState
             const SizedBox(height: 15),
             // Saisir l'heure de fermeture de la ressource.
             TextField(
+              controller: fermetureController,
               decoration: const InputDecoration(
                 labelText: 'Heure de fermeture (ex: 17:00)',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.access_time_filled),
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // Afficher la photo sélectionnée.
+            if (selectesImage != null)
+              Image.file(
+                selectesImage!,
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+
+            // Ajouter une photo de la ressource.
+            ElevatedButton.icon(
+              onPressed: choisirImage,
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Ajouter une photo'),
             ),
           ],
         ),

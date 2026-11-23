@@ -45,6 +45,7 @@ dependencies:
   mobile_scanner: ^7.5.0
   intl: ^0.20.3
   image_picker: ^1.2.4
+  flutter_image_compress: ^2.4.0
   firebase_storage: ^14.1.0
 
 dev_dependencies:
