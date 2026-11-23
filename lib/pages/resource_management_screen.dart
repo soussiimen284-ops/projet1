@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 // Écran de gestion des ressources par le responsable.
 // Gérer les ressources avec des champs modifiables.
@@ -8,8 +11,7 @@ class ResourceManagementScreen extends StatefulWidget {
   const ResourceManagementScreen({super.key});
 
   @override
-  State<ResourceManagementScreen> createState() =>
-      _ResourceManagementScreenState();
+  State<ResourceManagementScreen> createState() => _ResourceManagementScreenState();
 }
 
 class _ResourceManagementScreenState
@@ -44,6 +46,93 @@ class _ResourceManagementScreenState
     }
   }
 
+  // Enregistrer la ressource et sa photo dans Firestore.
+  Future<void> enregistrerRessource() async {
+    if (nomController.text.trim().isEmpty ||
+        typeRessource == null ||
+        capaciteController.text.trim().isEmpty ||
+        ouvertureController.text.trim().isEmpty ||
+        fermetureController.text.trim().isEmpty ||
+        selectesImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez remplir tous les champs et choisir une photo.'),
+        ),
+      );
+      return;
+    }
+
+    final int? capacite =
+    int.tryParse(capaciteController.text.trim());
+
+    if (capacite == null || capacite <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez saisir une capacité valide.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Compresser la photo sélectionnée.
+      final compressedImage =
+      await FlutterImageCompress.compressWithFile(
+        selectesImage!.path,
+        minWidth: 600,
+        minHeight: 400,
+        quality: 60,
+        format: CompressFormat.jpeg,
+      );
+
+      if (compressedImage == null ||
+          compressedImage.length > 180 * 1024) {
+        throw Exception('La photo est trop volumineuse.');
+      }
+
+      // Convertir la photo en Base64.
+      final String photoBase64 =
+      base64Encode(compressedImage);
+
+      // Enregistrer les informations dans Firestore.
+      await FirebaseFirestore.instance
+          .collection('ressources')
+          .add({
+        'nom': nomController.text.trim(),
+        'type': typeRessource,
+        'capacite': capacite,
+        'equipements': equipementsController.text
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList(),
+        'ouverture': ouvertureController.text.trim(),
+        'fermeture': fermetureController.text.trim(),
+        'photoBase64': photoBase64,
+        'actif': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Afficher un message de confirmation.
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ressource ajoutée avec succès !'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur : $e'),
+        ),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,6 +148,7 @@ class _ResourceManagementScreenState
       // Afficher le formulaire de gestion des ressources.
       body: Padding(
         padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
         child: Column(
           children: [
             const Text(
@@ -70,6 +160,7 @@ class _ResourceManagementScreenState
             ),
 
             const SizedBox(height: 20),
+
 
             // Saisir le nom de la ressource.
             TextField(
@@ -175,7 +266,14 @@ class _ResourceManagementScreenState
               icon: const Icon(Icons.photo_library),
               label: const Text('Ajouter une photo'),
             ),
+            // Enregistrer la ressource dans Firebase.
+            ElevatedButton.icon(
+              onPressed: enregistrerRessource,
+              icon: const Icon(Icons.save),
+              label: const Text('Enregistrer la ressource'),
+            ),
           ],
+        ),
         ),
       ),
     );
