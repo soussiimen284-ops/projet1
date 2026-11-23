@@ -3,6 +3,7 @@ import 'room_booking_screen.dart';
 import 'package:projet1/pages/my_bookings_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'resource_management_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -74,6 +75,21 @@ return Scaffold(
             ),
                 _serviceCard(Icons.qr_code_scanner, 'Scanner QR Code', Colors.purple),
                 _serviceCard(Icons.smart_toy, 'Assistant IA', Colors.teal),
+            //afficher la gestion des resources uniquement por la responsable.
+            if(role == 'responsable')
+              _serviceCard(
+                Icons.admin_panel_settings,
+                'Gestion des ressources',
+                Colors.indigo,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ResourceManagementScreen(),
+                    ),
+                  );
+                },
+              ),
               ],
             ),
           ),
