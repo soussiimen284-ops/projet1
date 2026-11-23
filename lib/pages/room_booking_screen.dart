@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projet1/pages/booking_screen.dart';
-
+import 'dart:convert';
 
 class RoomBookingScreen extends StatelessWidget {
   const RoomBookingScreen({super.key});
@@ -19,7 +19,7 @@ class RoomBookingScreen extends StatelessWidget {
       ),
 
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('rooms').snapshots(includeMetadataChanges: true),
+        stream: FirebaseFirestore.instance.collection('ressources').snapshots(),
         builder: (BuildContext  context,AsyncSnapshot<QuerySnapshot> snapshot) {
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -67,7 +67,7 @@ class RoomBookingScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => BookingScreen(
-                            roomName: room['name'] ?? 'Salle',
+                            roomName: room['nom'] ?? 'Salle',
                             roomId: rooms[index].id,
                           ),
                         ),
@@ -75,14 +75,19 @@ class RoomBookingScreen extends StatelessWidget {
                     },
                     contentPadding: const EdgeInsets.all(15),
 
-                    leading: const Icon(
-                      Icons.meeting_room,
-                      color: Color(0xFF2457A7),
-                      size: 40,
+                    // Afficher la photo de la ressource enregistrée dans Firebase.
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: room['photoBase64'] != null ? Image.memory(base64Decode(room['photoBase64']),
+                        width: 65,
+                        height: 65,
+                        fit: BoxFit.cover,
+                      )
+                          : const Icon(Icons.meeting_room, size: 40),
                     ),
 
                     title: Text(
-                      room['name'] ?? 'Salle',
+                      room['nom'] ?? 'Salle',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -92,8 +97,7 @@ class RoomBookingScreen extends StatelessWidget {
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                          'Capacité : ${room['capacity'] ?? 0} personnes\n'
-                              'Équipement : ${room['equipment'] ?? ''}',
+                        'Capacité : ${room['capacite'] ?? 0} personnes\n''Équipement : ${(room['equipements'] ?? []).join(', ')}',
                         ),
                       ),
                     ),
