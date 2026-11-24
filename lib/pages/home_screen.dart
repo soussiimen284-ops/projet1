@@ -4,6 +4,8 @@ import 'package:projet1/pages/my_bookings_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'resource_management_screen.dart';
+import 'package:projet1/pages/ai_assistant_screen.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -74,19 +76,18 @@ return Scaffold(
               },
             ),
                 _serviceCard(Icons.qr_code_scanner, 'Scanner QR Code', Colors.purple),
-                _serviceCard(Icons.smart_toy, 'Assistant IA', Colors.teal),
+            // Ouvrir l'écran de l'assistant intelligent.
+            _serviceCard(Icons.smart_toy, 'Assistant IA', Colors.teal, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const AiAssistantScreen()),
+                );
+              },
+            ),
+
             //afficher la gestion des resources uniquement por la responsable.
             if(role == 'responsable')
-              _serviceCard(
-                Icons.admin_panel_settings,
-                'Gestion des ressources',
-                Colors.indigo,
+              _serviceCard(Icons.admin_panel_settings, 'Gestion des ressources', Colors.indigo,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ResourceManagementScreen(),
-                    ),
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const ResourceManagementScreen()),
                   );
                 },
               ),
@@ -101,31 +102,16 @@ return Scaffold(
 );
   }
 
-  Widget _serviceCard(
-      IconData icon,
-      String title,
-      Color color, {
-        VoidCallback? onTap,
-      }) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  Widget _serviceCard(IconData icon, String title, Color color, {VoidCallback? onTap,}) {
+    return Card(elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: InkWell(borderRadius: BorderRadius.circular(18),onTap: onTap,
+        child: Column(mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 42, color: color),
             const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
+              child: Text(title, textAlign: TextAlign.center, style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
