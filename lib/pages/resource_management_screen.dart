@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 // Écran de gestion des ressources par le responsable.
 // Gérer les ressources avec des champs modifiables.
@@ -91,13 +92,10 @@ class _ResourceManagementScreenState
       }
 
       // Convertir la photo en Base64.
-      final String photoBase64 =
-      base64Encode(compressedImage);
+      final String photoBase64 = base64Encode(compressedImage);
 
       // Enregistrer les informations dans Firestore.
-      await FirebaseFirestore.instance
-          .collection('ressources')
-          .add({
+      final ressourceRef = await FirebaseFirestore.instance.collection('ressources').add({
         'nom': nomController.text.trim(),
         'type': typeRessource,
         'capacite': capacite,
@@ -114,6 +112,30 @@ class _ResourceManagementScreenState
       });
 
       // Afficher un message de confirmation.
+      if (!mounted) return;
+      // Afficher le QR Code de la ressource ajoutée.
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('QR Code - ${nomController.text.trim()}'),
+          content: SizedBox(
+            width: 220,
+            height: 220,
+            child: QrImageView(
+              data: 'ressource:${ressourceRef.id}',
+              version: QrVersions.auto,
+              size: 200,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fermer'),
+            ),
+          ],
+        ),
+      );
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projet1/pages/qr_scan_screen.dart';
 
 class MyBookingsScreen extends StatelessWidget {
   const MyBookingsScreen({super.key});
@@ -28,9 +29,7 @@ class MyBookingsScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Annuler la réservation ?'),
-        content: const Text(
-          'Voulez-vous vraiment annuler cette réservation ?',
-        ),
+        content: const Text('Voulez-vous vraiment annuler cette réservation ?',),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -210,37 +209,45 @@ class MyBookingsScreen extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 15),
+                        // Ouvrir l'écran de scan pour confirmer la présence.
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(onPressed: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => QrScanScreen(bookingId: bookings[index].id, roomId: booking['roomId'] ?? '',),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.qr_code_scanner),
+                            label: const Text('Confirmer ma présence'),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                              //Annuler la reservation.
                               SizedBox(
                                 width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: () => cancelBooking(
-                                    context,
-                                    bookings[index].id,
-                                    booking,
-                                  ),
+                                child: ElevatedButton.icon(onPressed: () => cancelBooking(context, bookings[index].id, booking,),
                                   icon: const Icon(Icons.cancel_outlined),
                                   label: const Text('Annuler la réservation'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                    foregroundColor: Colors.white,
-                                  ),
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white,),
                                 ),
                               ),
-                            ] else ...[
-                        const Row(
-                        children: [
-                        Icon(Icons.cancel, color: Colors.red),
-                        SizedBox(width: 8),
-                          Text(
-                            'Réservation annulée',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          ],
-                        ),
-                      ],
+                      // Afficher le statut correct de la réservation.
+                    ] else if (booking['status'] == 'present') ...[const Row(children: [
+                Icon(Icons.verified, color: Colors.green),
+                SizedBox(width: 8),
+                Text('Présence confirmée',
+                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold,),
+                ),
+                ],
+              ),
+              ] else ...[
+              const Row(
+              children: [Icon(Icons.cancel, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Réservation annulée', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold,),),
+              ],
+              ),
+              ],
                   ],
                 ),
               ),
