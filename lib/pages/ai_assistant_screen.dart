@@ -101,7 +101,18 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         : int.tryParse(heureMatch.group(1)!);
     // Extraire la durée souhaitée de la réservation.
     final dureeDemandee = question.toLowerCase().contains('deux heures') || question.toLowerCase().contains('2 heures') ? 2 : 1;
+    // Identifier le type de ressource demandé par l'étudiant.
+    final demande = question.toLowerCase();
 
+    String? typeDemande;
+
+    if (demande.contains('laboratoire') || demande.contains('labo')) {
+      typeDemande = 'laboratoire';
+    } else if (demande.contains('terrain')) {
+      typeDemande = 'terrain';
+    } else if (demande.contains('salle')) {
+      typeDemande = 'salle';
+    }
     if (question.isEmpty) return;
 
     setState(() {
@@ -148,6 +159,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       final propositions = <String>[];
 
       for (final ressource in ressources) {
+        if (typeDemande != null && ressource['type'].toString().toLowerCase() != typeDemande) {
+          continue;
+        }
         final creneaux = await calculerCreneauxDisponibles(ressource, date, dureeDemandee);
 
         for (final creneau in creneaux) {
@@ -158,7 +172,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           }
           final reference = (ressource['id'] as String).substring(0, 6);
 
-          propositions.add('${ressource['nom']} (Réf. $reference) à $creneau');
+          final heureFin = heureCreneau + dureeDemandee;
+
+          propositions.add('${ressource['nom']} (Réf. $reference) ''de $creneau à ${heureFin.toString().padLeft(2, '0')}:00',);
 
           if (propositions.length == 3) break;
         }
