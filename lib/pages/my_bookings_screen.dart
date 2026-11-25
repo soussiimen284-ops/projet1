@@ -3,14 +3,78 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projet1/pages/qr_scan_screen.dart';
 
-class MyBookingsScreen extends StatelessWidget {
+
+
+class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
+
+  @override
+  State<MyBookingsScreen> createState() => _MyBookingsScreenState();
+}
+class _MyBookingsScreenState extends State<MyBookingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    libererReservationsExpirees().catchError((e) {
+      debugPrint('Erreur de libération : $e');
+    });
+  }
+  Future<void> libererReservationsExpirees() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final snapshot = await FirebaseFirestore.instance.collection('bookings').where('userId', isEqualTo: user.uid).where('status', isEqualTo: 'confirmed').get();
+    debugPrint('Nombre de réservations : ${snapshot.docs.length}');
+    // Vérifier les réservations dépassant le délai de 15 minutes.
+    for (final doc in snapshot.docs) {
+      final booking = doc.data();
+      final startAt = (booking['startAt'] as Timestamp).toDate();
+      // Afficher la date limite de confirmation.
+      final dateLimite = startAt.add(const Duration(minutes: 15));
+      debugPrint('Date limite : $dateLimite');
+      debugPrint('Maintenant : ${DateTime.now()}');
+      //afficher la date de début de la reservation.
+      debugPrint('Date du début : $startAt');
+
+      if (DateTime.now().isAfter(
+        startAt.add(const Duration(minutes: 15)),
+      )) {
+        // Récupérer les identifiants des créneaux à libérer.
+        final bookingRef = doc.reference;
+        final slotIds = List<String>.from(booking['slotIds'] ?? []);
+
+        // Libérer les créneaux et marquer la réservation comme expirée.
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final currentBooking = await transaction.get(bookingRef);
+
+          if (!currentBooking.exists || currentBooking.data()?['status'] != 'confirmed') {
+            return;
+          }
+
+          final slotRefs = slotIds.map((id) => FirebaseFirestore.instance.collection('slots').doc(id)).toList();
+
+          for (final ref in slotRefs) {await transaction.get(ref);
+          }
+
+          transaction.update(bookingRef, {'status': 'expired', 'expiredAt': FieldValue.serverTimestamp(),
+          });
+
+          for (final ref in slotRefs) {transaction.delete(ref);
+          }
+        });
+      }
+    }
+  }
+
   Future<void> cancelBooking(
       BuildContext context,
       String bookingId,
       Map<String, dynamic> booking,
       ) async {
     final startAt = (booking['startAt'] as Timestamp).toDate();
+    // Vérifier si la réservation a dépassé le délai de 15 minutes.
+    final dateLimite = startAt.add(const Duration(minutes: 15));
+    debugPrint('Date limite : $dateLimite');
+    debugPrint('Maintenant : ${DateTime.now()}');
 
     if (DateTime.now().isAfter(
       startAt.subtract(const Duration(hours: 1)),
@@ -235,16 +299,28 @@ class MyBookingsScreen extends StatelessWidget {
                     ] else if (booking['status'] == 'present') ...[const Row(children: [
                 Icon(Icons.verified, color: Colors.green),
                 SizedBox(width: 8),
-                Text('Présence confirmée',
-                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold,),
+                Text('Présence confirmée', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold,),
+                ),
+                ],
+              ),
+                      // Afficher le statut de la réservation selon son état.
+                    ] else if (booking['status'] == 'expired') ...[
+                const Row(
+                children: [
+                Icon(Icons.access_time, color: Colors.orange),
+                SizedBox(width: 8),
+                Text(
+                  'Réservation expirée',
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 ],
               ),
               ] else ...[
-              const Row(
-              children: [Icon(Icons.cancel, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Réservation annulée', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold,),),
+              const Row(children: [Icon(Icons.cancel, color: Colors.red),SizedBox(width: 8),
+              Text('Réservation annulée',style: TextStyle(color: Colors.red,fontWeight: FontWeight.bold)),
               ],
               ),
               ],
