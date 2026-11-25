@@ -233,21 +233,23 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                     children: [
                   Row(
                   children: [
-                  const Icon(
-                  Icons.meeting_room,
-                    color: Color(0xFF2457A7),
-                    size: 28,
-                  ),
+                    Icon(
+                      booking['resourceType'] == 'Terrain'
+                          ? Icons.sports_soccer
+                          : Icons.meeting_room,
+                      color: const Color(0xFF2457A7),
+                      size: 28,
+                    ),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      booking['roomName'] ?? 'Salle',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    // Afficher le nom de la ressource réservée.
+                    Expanded(
+                      child: Text(
+                        booking['resourceType'] == 'Terrain'
+                            ? 'Terrain : ${booking['roomName'] ?? ''}'
+                            : 'Salle : ${booking['roomName'] ?? ''}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold,),
                       ),
                     ),
-                  ),
                   ],
                 ),
                 const Divider(height: 25),

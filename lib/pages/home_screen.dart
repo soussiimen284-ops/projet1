@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'resource_management_screen.dart';
 import 'package:projet1/pages/ai_assistant_screen.dart';
+import 'package:projet1/pages/room_booking_screen.dart';
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -14,64 +16,40 @@ class HomeScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 // Lire le rôle de l'utilisateur depuis Firestore.
 return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-future: FirebaseFirestore.instance
-.collection('users')
-.doc(user!.uid)
-.get(),
+future: FirebaseFirestore.instance.collection('users').doc(user!.uid).get(),
 builder: (context, snapshot) {
 if (!snapshot.hasData) {
-return const Scaffold(
-body: Center(child: CircularProgressIndicator()),
-);
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
 }
 
 final role = snapshot.data!.data()?['role'] ?? 'etudiant';
 
 return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: const Text('Réservation Campus'),
-        backgroundColor: const Color(0xFF2457A7),
-        foregroundColor: Colors.white,
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(title: const Text('Réservation Campus'), backgroundColor: const Color(0xFF2457A7),foregroundColor: Colors.white,centerTitle: true),
+
+      body: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-           Text(
-            role == 'responsable'?'Espace Responsable':'Bienvenue!',
-          style: TextStyle(
-            fontSize: 27,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+           Text(role == 'responsable'?'Espace Responsable':'Bienvenue!', style: TextStyle(fontSize: 27, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-          const Text('Que souhaitez-vous réserver ?', style: TextStyle(fontSize: 16, color: Colors.grey,),
-          ),
+          const Text('Que souhaitez-vous réserver ?', style: TextStyle(fontSize: 16, color: Colors.grey,)),
           const SizedBox(height: 25),
           Expanded(child: GridView.count(crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15, children: [
             GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RoomBookingScreen(),
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const RoomBookingScreen()));
+              },
+              child: _serviceCard(Icons.meeting_room, 'Réserver une salle', Colors.blue),
+            ),
+            // Ouvrir la liste des terrains à réserver.
+            _serviceCard(Icons.sports_soccer, 'Réserver un terrain', Colors.green, onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const RoomBookingScreen(typeRessource: 'Terrain'),
                   ),
                 );
               },
-              child: _serviceCard(
-                Icons.meeting_room,
-                'Réserver une salle',
-                Colors.blue,
-              ),
             ),
-                _serviceCard(Icons.sports_soccer, 'Réserver un terrain', Colors.green),
                 _serviceCard(Icons.calendar_month, 'Mes réservations', Colors.orange, onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => const MyBookingsScreen(),
-                  ),
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const MyBookingsScreen()),
                 );
               },
             ),
@@ -86,9 +64,7 @@ return Scaffold(
             //afficher la gestion des resources uniquement por la responsable.
             if(role == 'responsable')
               _serviceCard(Icons.admin_panel_settings, 'Gestion des ressources', Colors.indigo,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const ResourceManagementScreen()),
-                  );
+                onTap: () { Navigator.push(context, MaterialPageRoute(builder: (context) => const ResourceManagementScreen()));
                 },
               ),
               ],
@@ -111,11 +87,7 @@ return Scaffold(
             Icon(icon, size: 42, color: color),
             const SizedBox(height: 12),
             Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
-              child: Text(title, textAlign: TextAlign.center, style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
             ),
           ],
         ),

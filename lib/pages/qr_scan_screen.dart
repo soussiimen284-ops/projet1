@@ -69,8 +69,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
       }
 
       await bookingRef.update({
-        'status': 'present',
-        'checkedInAt': FieldValue.serverTimestamp(),
+        'status': 'present', 'checkedInAt': FieldValue.serverTimestamp(),
       });
 
       if (!mounted) return;

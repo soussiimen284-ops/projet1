@@ -4,7 +4,8 @@ import 'package:projet1/pages/booking_screen.dart';
 import 'dart:convert';
 
 class RoomBookingScreen extends StatelessWidget {
-  const RoomBookingScreen({super.key});
+  final String typeRessource;
+  const RoomBookingScreen({super.key, this.typeRessource = 'Salle'});
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +13,7 @@ class RoomBookingScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F7FA),
 
       appBar: AppBar(
-        title: const Text('Réserver une salle'),
+        title: Text(typeRessource == 'Terrain' ? 'Réserver un terrain' : 'Réserver une salle'),
         backgroundColor: const Color(0xFF2457A7),
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -41,8 +42,18 @@ class RoomBookingScreen extends StatelessWidget {
           if (snapshot.data!.docs.isEmpty) {
             return const Center(child: Text('Collection vide'));
           }
-
-          final rooms = snapshot.data!.docs;
+          // Filtrer les ressources selon le type choisi.
+          final rooms = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['type'] == typeRessource;
+          }).toList();
+          // Vérifier si des ressources correspondent au type choisi.
+          if (rooms.isEmpty) {
+            return Center(
+              child: Text(
+                typeRessource == 'Terrain' ? 'Aucun terrain disponible' : 'Aucune salle disponible',),
+            );
+          }
           print('Nomber de salles: ${rooms.length}');
 
           return ListView.builder(
@@ -67,6 +78,7 @@ class RoomBookingScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>BookingScreen(roomName: room['nom'] ?? 'Salle', roomId: rooms[index].id,
+                            resourceType: typeRessource,
                             ouverture: room['ouverture'] ?? '08:00',
                             fermeture: room['fermeture'] ?? '18:00',
                           ),

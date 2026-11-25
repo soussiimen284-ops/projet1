@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BookingScreen extends StatefulWidget {
   final String roomName;
+  //definir le type de la ressource
+  final String resourceType;
   final String roomId;
 
   // Récupérer les horaires d'ouverture et de fermeture de la salle.
@@ -16,6 +18,7 @@ class BookingScreen extends StatefulWidget {
     super.key,
     required this.roomName,
     required this.roomId,
+    required this.resourceType,
     this.ouverture = '08:00',
     this.fermeture = '18:00',
   });
@@ -121,9 +124,7 @@ class _BookingScreenState extends State<BookingScreen> {
         startHour,
       );
 
-      final bookingRef = FirebaseFirestore.instance
-          .collection('bookings')
-          .doc();
+      final bookingRef = FirebaseFirestore.instance.collection('bookings').doc();
 
       final slotRefs = List.generate(selectedDuration, (index) {
         final hour = startHour + index;
@@ -132,9 +133,7 @@ class _BookingScreenState extends State<BookingScreen> {
         final slotId =
             '${widget.roomId}_${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}_$hourText';
 
-        return FirebaseFirestore.instance
-            .collection('slots')
-            .doc(slotId);
+        return FirebaseFirestore.instance.collection('slots').doc(slotId);
       });
 
       await FirebaseFirestore.instance.runTransaction((transaction) async {
@@ -149,29 +148,25 @@ class _BookingScreenState extends State<BookingScreen> {
         }
 
         for (int i = 0; i < slotRefs.length; i++) {
-          transaction.set(slotRefs[i], {
-            'roomId': widget.roomId,
-            'roomName': widget.roomName,
-            'userId': user.uid,
-            'bookingId': bookingRef.id,
-            'date': Timestamp.fromDate(date),
-            'hour': startHour + i,
-            'status': 'reserved',
-            'createdAt': FieldValue.serverTimestamp(),
+          transaction.set(slotRefs[i], {'roomId': widget.roomId, 'roomName': widget.roomName,
+            'resourceType': widget.resourceType,
+            'userId': user.uid, 'bookingId': bookingRef.id,
+            'date': Timestamp.fromDate(date), 'hour': startHour + i, 'status': 'reserved', 'createdAt': FieldValue.serverTimestamp(),
           });
         }
 
         transaction.set(bookingRef, {
           'roomId': widget.roomId,
           'roomName': widget.roomName,
+          'resourceType': widget.resourceType,
           'userId': user.uid,
           'slotIds': slotRefs.map((ref) => ref.id).toList(),
           'date': Timestamp.fromDate(date),
           'startAt': Timestamp.fromDate(startAt),
           'duration': selectedDuration,
           'status': 'confirmed',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+          'createdAt': FieldValue.serverTimestamp()}
+        );
       });
 
       if (!mounted) return;
