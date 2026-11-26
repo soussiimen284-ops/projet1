@@ -294,6 +294,69 @@ class _ResourceManagementScreenState
               icon: const Icon(Icons.save),
               label: const Text('Enregistrer la ressource'),
             ),
+            // Afficher la liste des ressources avec leurs QR Codes.
+            const SizedBox(height: 25),
+            const Text(
+              'Ressources enregistrées',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 15),
+
+            StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('ressources')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                }
+
+                if (snapshot.hasError) {
+                  return const Text('Erreur de chargement des ressources');
+                }
+
+                final ressources = snapshot.data?.docs ?? [];
+
+                if (ressources.isEmpty) {
+                  return const Text('Aucune ressource enregistrée.');
+                }
+
+                return Column(
+                  children: ressources.map((doc) {
+                    final ressource = doc.data();
+
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.qr_code,
+                          color: Color(0xFF2457A7),
+                        ),
+                        title: Text(ressource['nom'] ?? 'Ressource'),
+                        subtitle: Text(ressource['type'] ?? ''),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.visibility),
+                          tooltip: 'Afficher QR Code',
+                          onPressed: () {
+                            // Afficher le QR Code de la ressource sélectionnée.
+                            showDialog<void>(context: context,
+                              builder: (context) => AlertDialog(title: Text('QR Code - ${ressource['nom']}'),
+                                content: SizedBox(width: 220, height: 220, child: QrImageView(data: 'ressource:${doc.id}', version: QrVersions.auto, size: 200),
+                                ),
+                                actions: [TextButton(onPressed: () => Navigator.pop(context),child: const Text('Fermer')),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
           ],
         ),
         ),

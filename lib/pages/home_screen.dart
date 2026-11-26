@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'resource_management_screen.dart';
 import 'package:projet1/pages/ai_assistant_screen.dart';
 import 'package:projet1/pages/room_booking_screen.dart';
-
+import 'package:projet1/pages/my_bookings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -53,7 +53,12 @@ return Scaffold(
                 );
               },
             ),
-                _serviceCard(Icons.qr_code_scanner, 'Scanner QR Code', Colors.purple),
+            // Ouvrir la liste des réservations pour confirmer la présence.
+            _serviceCard(Icons.qr_code_scanner, 'Scanner QR Code', Colors.purple, onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const MyBookingsScreen()),
+                );
+              },
+            ),
             // Ouvrir l'écran de l'assistant intelligent.
             _serviceCard(Icons.smart_toy, 'Assistant IA', Colors.teal, onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const AiAssistantScreen()),
