@@ -103,7 +103,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final dureeDemandee = question.toLowerCase().contains('deux heures') || question.toLowerCase().contains('2 heures') ? 2 : 1;
     // Identifier le type de ressource demandé par l'étudiant.
     final demande = question.toLowerCase();
-
+    // Détecter si l'étudiant demande un créneau dans l'après-midi.
+    final demandeApresMidi = demande.contains('après-midi') || demande.contains('apres-midi');
     String? typeDemande;
 
     if (demande.contains('laboratoire') || demande.contains('labo')) {
@@ -166,6 +167,10 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
         for (final creneau in creneaux) {
           final heureCreneau = int.parse(creneau.split(':')[0]);
+          // Ignorer les créneaux en dehors de l'après-midi (12h à 18h).
+          if (demandeApresMidi && (heureCreneau < 12 || heureCreneau >= 18)) {
+            continue;
+          }
 
           if (heureDemandee != null && heureCreneau != heureDemandee) {
             continue;
