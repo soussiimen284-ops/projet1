@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 
 class RegisterScreen extends StatefulWidget {
@@ -37,10 +37,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Enregistrer les informations de l'étudiant dans Firestore.
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({'email': emailController.text.trim(), 'role': 'etudiant', 'createdAt': FieldValue.serverTimestamp(),
       });
-
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({'email': emailController.text.trim(), 'role': 'etudiant', 'createdAt': FieldValue.serverTimestamp(),
-      });
-
 
       if (!mounted) return;
 

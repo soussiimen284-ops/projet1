@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projet1/pages/booking_screen.dart';
+import 'dart:convert';
+
 
 // Écran de l'assistant intelligent pour aider les étudiants.
 class AiAssistantScreen extends StatefulWidget {
@@ -101,8 +103,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final heureDemandee = heureMatch == null
         ? null
         : int.tryParse(heureMatch.group(1)!);
-    // Extraire la durée souhaitée de la réservation.
-    final dureeDemandee = question.toLowerCase().contains('deux heures') || question.toLowerCase().contains('2 heures') ? 2 : 1;
+      int dureeDemandee = 1;
     // Identifier le type de ressource demandé par l'étudiant.
     final demande = question.toLowerCase();
     // Détecter si l'étudiant demande un créneau dans l'après-midi.
@@ -111,17 +112,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final personnesMatch = RegExp(r'(\d+)\s*(personnes|places|étudiants|etudiants)').firstMatch(demande);
     final personnesDemandees = personnesMatch == null ? null : int.tryParse(personnesMatch.group(1)!);
 
-// Détecter si l'étudiant demande un projecteur.
-    final demandeProjecteur = demande.contains('projecteur');
-    String? typeDemande;
-
-    if (demande.contains('laboratoire') || demande.contains('labo')) {
-      typeDemande = 'laboratoire';
-    } else if (demande.contains('terrain')) {
-      typeDemande = 'terrain';
-    } else if (demande.contains('salle')) {
-      typeDemande = 'salle';
-    }
     if (question.isEmpty) return;
 
     setState(() {
@@ -137,23 +127,63 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       final model = FirebaseAI.googleAI().generativeModel(
         model: 'gemini-3.5-flash-lite',
       );
-
       final result = await model.generateContent([
         Content.text(
-          'Tu es un assistant universitaire. '
-              'Analyse la demande suivante et identifie la date demandée. '
+          'Tu es un assistant universitaire pour la réservation de salles et terrains. '
+              'Analyse la demande de l étudiant et retourne uniquement un objet JSON valide, sans Markdown. '
               'La date actuelle est ${DateTime.now()}. '
-              'Réponds uniquement avec une date au format yyyy-MM-dd. '
-              'Si la date est impossible à identifier, réponds INCONNUE. '
+              'Le JSON doit contenir exactement les champs suivants : '
+              '"type", "equipements", "date", "heure", "duree". '
+              '"type" doit être salle, laboratoire ou terrain. '
+              '"equipements" doit être une liste de chaînes de caractères. '
+              '"date" doit être au format yyyy-MM-dd. '
+              '"heure" doit être au format HH:mm. '
+              '"duree" doit être 1 ou 2 heures. '
+              'Si une information est absente ou impossible à identifier, utilise null pour cette information. '
+              'Ne devine jamais une information. '
               'Demande : $question',
         ),
       ]);
 
-      final dateTexte = result.text?.trim();
+      final texteJson = result.text?.trim();
+
+      if (texteJson == null || texteJson.isEmpty) {
+        throw Exception('Aucune réponse de Gemini.');
+      }
+
+      Map<String, dynamic> criteresIA;
+
+      try {
+        criteresIA = jsonDecode(texteJson) as Map<String, dynamic>;
+      } catch (e) {
+        throw Exception('Réponse JSON invalide.');
+      }
+
+      final typeIA = criteresIA['type']?.toString();
+      final equipementsIA = criteresIA['equipements'] is List ? List<String>.from(criteresIA['equipements'])
+          : <String>[];
+
+      final dateTexte = criteresIA['date']?.toString();
+      final heureTexte = criteresIA['heure']?.toString();
+      final dureeIA = criteresIA['duree'];
 
       if (dateTexte == null ||
           !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateTexte)) {
         throw Exception('Veuillez préciser la date souhaitée.');
+      }
+
+      if (dureeIA != 1 && dureeIA != 2) {
+        throw Exception('La durée doit être de 1 ou 2 heures.');
+      }
+      dureeDemandee = dureeIA as int;
+
+      if (typeIA != null &&
+          !['salle', 'laboratoire', 'terrain'].contains(typeIA.toLowerCase())) {
+        throw Exception('Type de ressource invalide.');
+      }
+
+      if (heureTexte != null && !RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(heureTexte)) {
+        throw Exception('Veuillez préciser une heure valide.');
       }
 
       // Convertir la date comprise par Gemini.
@@ -168,7 +198,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       propositions = [];
 
       for (final ressource in ressources) {
-        if (typeDemande != null && ressource['type'].toString().toLowerCase() != typeDemande) {
+        if (typeIA != null && ressource['type'].toString().toLowerCase() != typeIA.toLowerCase()) {
           continue;
         }
         // Vérifier la capacité de la ressource demandée.
@@ -180,7 +210,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 // Vérifier la présence du projecteur dans les équipements.
         final equipements = ressource['equipements'].toString().toLowerCase();
 
-        if (demandeProjecteur && !equipements.contains('projecteur')) {
+        final equipementsDisponibles = equipementsIA.every((equipement) => equipements.contains(equipement.toLowerCase()));
+
+        if (!equipementsDisponibles) {
           continue;
         }
         final creneaux = await calculerCreneauxDisponibles(ressource, date, dureeDemandee);
@@ -192,7 +224,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             continue;
           }
 
-          if (heureDemandee != null && heureCreneau != heureDemandee) {
+          if (heureTexte != null && creneau != heureTexte) {
             continue;
           }
           final reference = (ressource['id'] as String).substring(0, 6);

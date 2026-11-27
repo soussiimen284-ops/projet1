@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'room_booking_screen.dart';
-import 'package:projet1/pages/my_bookings_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'resource_management_screen.dart';
-import 'package:projet1/pages/ai_assistant_screen.dart';
 import 'package:projet1/pages/room_booking_screen.dart';
 import 'package:projet1/pages/my_bookings_screen.dart';
+import 'package:projet1/pages/ai_assistant_screen.dart';
+import 'resource_management_screen.dart';
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
