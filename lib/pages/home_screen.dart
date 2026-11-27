@@ -32,8 +32,10 @@ return Scaffold(
           children: [
            Text(role == 'responsable'?'Espace Responsable':'Bienvenue!', style: TextStyle(fontSize: 27, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-          const Text('Que souhaitez-vous réserver ?', style: TextStyle(fontSize: 16, color: Colors.grey,)),
-          const SizedBox(height: 25),
+            // Afficher la question uniquement dans l'espace étudiant.
+            if (role == 'etudiant') ...[const Text('Que souhaitez-vous réserver ?', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              const SizedBox(height: 25),
+            ],
           Expanded(child: GridView.count(crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15, children: [
             GestureDetector(
               onTap: () {

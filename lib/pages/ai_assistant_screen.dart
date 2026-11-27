@@ -105,6 +105,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
     final demande = question.toLowerCase();
     // Détecter si l'étudiant demande un créneau dans l'après-midi.
     final demandeApresMidi = demande.contains('après-midi') || demande.contains('apres-midi');
+    // Extraire le nombre de personnes demandé par l'étudiant.
+    final personnesMatch = RegExp(r'(\d+)\s*(personnes|places|étudiants|etudiants)').firstMatch(demande);
+    final personnesDemandees = personnesMatch == null ? null : int.tryParse(personnesMatch.group(1)!);
+
+// Détecter si l'étudiant demande un projecteur.
+    final demandeProjecteur = demande.contains('projecteur');
     String? typeDemande;
 
     if (demande.contains('laboratoire') || demande.contains('labo')) {
@@ -161,6 +167,18 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
       for (final ressource in ressources) {
         if (typeDemande != null && ressource['type'].toString().toLowerCase() != typeDemande) {
+          continue;
+        }
+        // Vérifier la capacité de la ressource demandée.
+        final capacite = int.tryParse(ressource['capacite'].toString()) ?? 0;
+        if (personnesDemandees != null && capacite < personnesDemandees) {
+          continue;
+        }
+
+// Vérifier la présence du projecteur dans les équipements.
+        final equipements = ressource['equipements'].toString().toLowerCase();
+
+        if (demandeProjecteur && !equipements.contains('projecteur')) {
           continue;
         }
         final creneaux = await calculerCreneauxDisponibles(ressource, date, dureeDemandee);
