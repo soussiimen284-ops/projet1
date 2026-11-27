@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projet1/pages/booking_screen.dart';
 
 // Écran de l'assistant intelligent pour aider les étudiants.
 class AiAssistantScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 // Stocker la réponse de l'assistant et gérer le chargement.
   String? reponse;
   bool chargement = false;
+  List<Map<String, dynamic>> propositions = [];
   // Récupérer les ressources réellement enregistrées dans Firestore.
   Future<List<Map<String, dynamic>>> recupererRessources() async {
     final snapshot = await FirebaseFirestore.instance.collection('ressources').get();
@@ -163,7 +165,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       );
 
       // Rechercher les créneaux réellement disponibles.
-      final propositions = <String>[];
+      propositions = [];
 
       for (final ressource in ressources) {
         if (typeDemande != null && ressource['type'].toString().toLowerCase() != typeDemande) {
@@ -195,9 +197,17 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           }
           final reference = (ressource['id'] as String).substring(0, 6);
 
-          final heureFin = heureCreneau + dureeDemandee;
-
-          propositions.add('${ressource['nom']} (Réf. $reference) ''de $creneau à ${heureFin.toString().padLeft(2, '0')}:00',);
+          propositions.add({
+            'roomId': ressource['id'],
+            'roomName': ressource['nom'],
+            'resourceType': ressource['type'],
+            'ouverture': ressource['ouverture'],
+            'fermeture': ressource['fermeture'],
+            'date': date,
+            'heure': creneau,
+            'duree': dureeDemandee,
+            'reference': reference,
+          });
 
           if (propositions.length == 3) break;
         }
@@ -208,11 +218,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       if (!mounted) return;
 
       setState(() {
-        reponse = propositions.isEmpty ? (heureDemandee != null
-            ? 'Aucun créneau disponible à ${heureDemandee.toString().padLeft(2, '0')}:00 pour cette durée.'
-            : 'Aucun créneau disponible pour cette date.')
-            : 'Voici les créneaux disponibles :\n'
-            '${propositions.join('\n')}';
+        reponse = propositions.isEmpty
+            ? (heureDemandee != null
+            ? 'Aucun créneau disponible à ${heureDemandee.toString().padLeft(2, '0')}:00 pour cette durée.' : 'Aucun créneau disponible pour cette date.') : 'Voici les créneaux disponibles :';
         chargement = false;
       });
     } catch (e) {
@@ -238,10 +246,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       appBar: AppBar(
         title: const Text('Assistant intelligent'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
+        body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
             const Icon(
               Icons.smart_toy,
               size: 70,
@@ -281,16 +290,44 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             // Afficher la réponse de l'assistant.
             if (reponse != null) ...[
               const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(15),
-                child: Text(reponse!),
-              ),
-            ],
-          ],
+              Text(reponse!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 10),
+              ...propositions.map((proposition) {
+                final date = proposition['date'] as DateTime;
 
+                return Card(child: ListTile(leading: const Icon(Icons.meeting_room, color: Colors.blue),
+                    title: Text(proposition['roomName'].toString()),
+                    subtitle: Text(
+                      'Date : ${date.day}/${date.month}/${date.year}\n'
+                          'Heure : ${proposition['heure']}\n'
+                          'Durée : ${proposition['duree']} heure(s)',
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(
+                          builder: (context) => BookingScreen(
+                            roomId: proposition['roomId'].toString(),
+                            roomName: proposition['roomName'].toString(),
+                            resourceType: proposition['resourceType'].toString(),
+                            ouverture: proposition['ouverture'].toString(),
+                            fermeture: proposition['fermeture'].toString(),
+                            initialDate: date,
+                            initialHour: proposition['heure'].toString(),
+                            initialDuration: proposition['duree'] as int,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+
+              }),
+            ],
+                  ],
+              ),
+              ),
+            ),
         ),
-      ),
     );
   }
 }

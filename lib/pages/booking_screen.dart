@@ -13,6 +13,9 @@ class BookingScreen extends StatefulWidget {
   // Récupérer les horaires d'ouverture et de fermeture de la salle.
   final String ouverture;
   final String fermeture;
+  final DateTime? initialDate;
+  final String? initialHour;
+  final int? initialDuration;
 
   const BookingScreen({
     super.key,
@@ -21,6 +24,9 @@ class BookingScreen extends StatefulWidget {
     required this.resourceType,
     this.ouverture = '08:00',
     this.fermeture = '18:00',
+    this.initialDate,
+    this.initialHour,
+    this.initialDuration,
   });
 
   @override
@@ -35,6 +41,13 @@ class _BookingScreenState extends State<BookingScreen> {
   void initState() {
     super.initState();
     initializeDateFormatting('fr_FR', null);
+
+    if (widget.initialDate != null) {
+      selectedDay = widget.initialDate!;
+      focusedDay = widget.initialDate!;
+    }
+    selectedHour = widget.initialHour;
+    selectedDuration = widget.initialDuration ?? 1;
   }
   Future<void> confirmerReservation() async {
     if (selectedHour == null) {
